@@ -11,11 +11,11 @@ export const createPerson = async (req, res) => {
         const passwordHash = await bcryptjs.hash(dataPerson.person_password, salt);
         const createPerson = await personModel.create({
             person_person: dataPerson.person_person,
-            person_password: passwordHash, // Usar el hash de la contraseña
-            PersonStatus_FK: dataPerson.status,
+            person_password: passwordHash,
+            personStatus_FK: dataPerson.status,
             role_FK: dataPerson.role,
         });
-        const token = jwt.sign({ email: createPerson.person_person }, process.env.JWK_SECRET, { expiresIn: "1h" });
+        const token = jwt.sign({ email: createPerson.person_person }, process.env.JWT_SECRET, { expiresIn: "1h" });
         res.status(201).json({
             ok: true,
             status: 201,
@@ -24,12 +24,14 @@ export const createPerson = async (req, res) => {
             token: token
         });
     } catch (error) {
+        console.error('Error creating person:', error);
         return res.status(500).json({
-            message: 'Something went wrong in the consultation',
+            message: `Something went wrong in the consultation: ${error.message}`,
             status: 500,
         });
     }
 };
+
 
 export const showPerson = async (req, res) => {
     try {
