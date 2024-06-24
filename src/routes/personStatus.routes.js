@@ -5,8 +5,11 @@ import { showPersonStatus, createPersonStatus, updatePersonStatus, deletePersonS
 const router = Router();
 
 router.get('/personStatus', showPersonStatus);
+router.get('/personStatus/:id', showPersonStatus);
 router.post('/personStatus', createPersonStatus);
-router.put('/personStatus', updatePersonStatus);
-router.delete('/personStatus', deletePersonStatus);
+router.put('/personStatus/:id', updatePersonStatus);
+router.delete('/personStatus/:id', deletePersonStatus);
 
 export default router;
+
+
