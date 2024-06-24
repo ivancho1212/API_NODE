@@ -1,104 +1,187 @@
-import {
-    getAllPersons,
-    getPersonById,
-    createPerson as createPersonModel,
-    updatePerson as updatePersonModel,
-    deletePerson as deletePersonModel,
-    getAllStatuses,
-    getStatusById
-} from '../../db/model.js'; 
+import bcryptjs from 'bcryptjs';
+import personModel from '../models/person.model.js';
+import { faker } from '@faker-js/faker';
+import personStatus from '../models/personStatus.model.js';
+import jwt from 'jsonwebtoken';
+
+export const createPerson = async (req, res) => {
+    try {
+        const salt = await bcryptjs.genSalt(10);
+        const dataPerson = req.body;
+        const passwordHash = await bcryptjs.hash(dataPerson.person_password, salt);
+        const createPerson = await personModel.create({
+            person_person: dataPerson.person_person,
+            person_password: passwordHash, // Usar el hash de la contraseña
+            PersonStatus_FK: dataPerson.status,
+            role_FK: dataPerson.role,
+        });
+        const token = jwt.sign({ email: createPerson.person_person }, process.env.JWK_SECRET, { expiresIn: "1h" });
+        res.status(201).json({
+            ok: true,
+            status: 201,
+            message: 'Create Person',
+            id: createPerson.person_id,
+            token: token
+        });
+    } catch (error) {
+        return res.status(500).json({
+            message: 'Something went wrong in the consultation',
+            status: 500,
+        });
+    }
+};
 
 export const showPerson = async (req, res) => {
     try {
-        const persons = await getAllPersons();
-        res.json(persons);
+        const Persons = await personModel.findAll();
+        res.status(200).json({
+            ok: true,
+            status: 200,
+            message: 'Show Person',
+            body: Persons,
+        });
     } catch (error) {
-        console.error('Error fetching persons:', error);
-        res.status(500).json({ error: 'Error fetching persons' });
+        return res.status(500).json({
+            message: 'Something went wrong in the consultation',
+            status: 500,
+        });
     }
 };
 
 export const showPersonId = async (req, res) => {
-    const { id } = req.params;
     try {
-        const person = await getPersonById(id);
-        if (!person) {
-            return res.status(404).json({ error: 'Person not found' });
-        }
-        res.json(person);
-    } catch (error) {
-        console.error('Error fetching person by ID:', error);
-        res.status(500).json({ error: 'Error fetching person by ID' });
-    }
-};
-
-export const createPerson = async (req, res) => {
-    const { name, lastName, document, documentType, status } = req.body; // Añadir `status`
-    try {
-        const id = await createPersonModel({ personName: name, personLast_name: lastName, personNumber: document, documentTypedFk: documentType, statusFk: status });
-        res.status(201).json({
-            id,
-            name,
-            lastName,
-            document,
-            documentType,
-            status // Incluir `status` en la respuesta
+        const idPerson = req.params.id;
+        const person = await personModel.findOne({
+            where: {
+                person_id: idPerson,
+            }
         });
-    } catch (error) {
-        console.error('Error creating person:', error);
-        res.status(500).json({ error: 'Error creating person' });
+        res.status(200).json({
+            ok: true,
+            status: 200,
+            message: 'Show Person id',
+            body: person,
+        });
+    }
+    catch (error) {
+        return res.status(500).json({
+            message: 'Something went wrong in the request',
+            status: 500,
+        });
     }
 };
 
 export const updatePerson = async (req, res) => {
-    const { id } = req.params; 
-    const { name, lastName, document, documentType, status } = req.body;
     try {
-        const affectedRows = await updatePersonModel({ id, personName: name, personLast_name: lastName, personNumber: document, documentTypedFk: documentType, statusFk: status });
-        if (affectedRows === 0) {
-            return res.status(404).json({ error: 'Person not found' });
-        }
-        res.json({ message: 'Person updated successfully' });
-    } catch (error) {
-        console.error('Error updating person:', error);
-        res.status(500).json({ error: 'Error updating person' });
+        const dataPerson = req.body;
+        const idPerson = req.params.id;
+        const updatePerson = await personModel.update({
+            person_person: dataPerson.person_name,
+            person_password: dataPerson.person_password,
+            personStatus_FK: dataPerson.status,
+            role_FK: dataPerson.role,
+        }, {
+            where: {
+                person_id: idPerson,
+            }
+        });
+        res.status(200).json({
+            ok: true,
+            status: 200,
+            message: 'Update Person',
+            body: updatePerson,
+        });
+    }
+    catch (error) {
+        return res.status(500).json({
+            message: 'Something went wrong in the request',
+            status: 500,
+        });
     }
 };
 
 export const deletePerson = async (req, res) => {
-    const { id } = req.params;
     try {
-        const affectedRows = await deletePersonModel(id);
-        if (affectedRows === 0) {
-            return res.status(404).json({ error: 'Person not found' });
-        }
-        res.json({ message: 'Person deleted successfully' });
-    } catch (error) {
-        console.error('Error deleting person:', error);
-        res.status(500).json({ error: 'Error deleting person' });
+        const idPerson = req.params.id;
+        const deletePerson = await personModel.destroy({
+            where: {
+                person_id: idPerson,
+            }
+        });
+        res.status(200).json({
+            ok: true,
+            status: 200,
+            message: 'Delete Person :)',
+            body: deletePerson,
+        });
+    }
+    catch (error) {
+        return res.status(500).json({
+            message: 'Something went wrong in the request',
+            status: 500,
+        });
     }
 };
 
-export const showStatuses = async (req, res) => {
+export const createPersonFK = async (req, res) => {
     try {
-        const statuses = await getAllStatuses();
-        res.json(statuses);
+        const createPerson = await personModel.create({
+            person_person: faker.internet.email(),
+            person_password: faker.internet.password(),
+            PersonStatus_FK: 1,
+            role_FK: 1,
+        });
+        res.status(201).json({
+            ok: true,
+            status: 201,
+            message: 'Create Person',
+            id: createPerson.person_id
+        });
     } catch (error) {
-        console.error('Error fetching statuses:', error);
-        res.status(500).json({ error: 'Error fetching statuses' });
+        return res.status(500).json({
+            message: 'Something went wrong in the consultation',
+            status: 500,
+        });
     }
 };
 
-export const showStatusById = async (req, res) => {
-    const { id } = req.params;
+export const LoginPerson = async (req, res) => {
     try {
-        const status = await getStatusById(id);
-        if (!status) {
-            return res.status(404).json({ error: 'Status not found' });
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({ error: "Missing required field: email, password" });
         }
-        res.json(status);
-    } catch (error) {
-        console.error('Error fetching status by ID:', error);
-        res.status(500).json({ error: 'Error fetching status by ID' });
+
+        const person = await personModel.findOne({
+            where: {
+                person_person: email,
+            }
+        });
+
+        if (!person) {
+            return res.status(400).json({ error: "User not found" });
+        }
+
+        const isMatch = await bcryptjs.compare(password, person.person_password);
+        if (!isMatch) {
+            return res.status(400).json({ error: "Invalid credentials" });
+        }
+
+        const token = jwt.sign({ email: person.person_person }, process.env.JWK_SECRET, { expiresIn: "1h" }); // Cambiado para usar la referencia correcta
+
+        res.status(200).json({
+            ok: true,
+            status: 200,
+            message: 'Login API :)',
+            id: person.person_id,
+            token: token
+        });
+    }
+    catch (error) {
+        return res.status(500).json({
+            message: 'Something went wrong in the request',
+            status: 500,
+        });
     }
 };

@@ -1,18 +1,11 @@
-import express from 'express';
-import personRoutes from './routes/person.routes.js';
+import app from './app/app.js';
+import dotenv from 'dotenv';
+import { modelsApp } from './config/models.app.js';
 
-const app = express();
+dotenv.config({ path: '../.env'});
+modelsApp(false);
+const port = process.env.SERVER_PORT || 3001;
 
-app.use(express.json());
-app.use('/api',personRoutes);
-
-app.use((rep,res,nex) =>{
-    res.status(404).json({
-        Message: 'Endpoint Losses'
-    });
+app.listen(port, () => {
+    console.log(`Connected Server on port ${port}`);
 });
-
-
-app.listen(3000);
-console.log("Server running....");
-
